@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Whisper models (large binary files — download separately)
+whisper.cpp/models/*.bin
+whisper.cpp/models/*.mlmodelc
+whisper.cpp/models/*.mlpackage
+
+# whisper.cpp build artifacts
+whisper.cpp/build/
+
+# Claude Code local settings
+.claude/
+
+# Secrets / env
+.env
+*.pem
