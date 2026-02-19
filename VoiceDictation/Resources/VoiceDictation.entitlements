@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        Sandbox is DISABLED.
+        CGEventTap (global hotkey monitoring) and cross-process text injection
+        via CGEvent do not work inside the App Sandbox. This app is intended
+        for direct distribution (notarized but not sandboxed), not the Mac App Store.
+    -->
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
+
+    <!-- Required for microphone access during notarization review. -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+</dict>
+</plist>

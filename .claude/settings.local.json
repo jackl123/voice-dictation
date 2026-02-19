@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcodebuild:*)",
+      "Bash(swift:*)",
+      "Bash(xcrun:*)",
+      "Bash(xcode-select:*)",
+      "Bash(gh auth status:*)",
+      "Bash(brew:*)",
+      "Bash(/opt/homebrew/bin/gh auth status:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
