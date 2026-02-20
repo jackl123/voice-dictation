@@ -32,7 +32,18 @@
 		0494D41C2F4742E6009C8271 /* ggml-metal-context.m in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4152F4742E6009C8271 /* ggml-metal-context.m */; };
 		0494D41D2F4742E6009C8271 /* ggml-metal-device.m in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4172F4742E6009C8271 /* ggml-metal-device.m */; };
 		0494D41E2F4742E6009C8271 /* ggml-metal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4132F4742E6009C8271 /* ggml-metal.cpp */; };
+		0494D4202F48544C009C8271 /* libwhisper.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0494D3E92F473EE3009C8271 /* libwhisper.a */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0494D4212F4854A7009C8271 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 04E391F72F471FDA009F6F4F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0494D3E82F473EE3009C8271;
+			remoteInfo = whisper;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		0494D3E92F473EE3009C8271 /* libwhisper.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libwhisper.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -84,12 +95,20 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0494D4202F48544C009C8271 /* libwhisper.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0494D41F2F48544C009C8271 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		04E391F62F471FDA009F6F4F = {
 			isa = PBXGroup;
 			children = (
@@ -119,6 +138,7 @@
 				0494D3F72F47421A009C8271 /* gguf.cpp */,
 				0494D3ED2F4740AE009C8271 /* whisper.cpp */,
 				04E392012F471FDA009F6F4F /* VoiceDictation */,
+				0494D41F2F48544C009C8271 /* Frameworks */,
 				04E392002F471FDA009F6F4F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -175,6 +195,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				0494D4222F4854A7009C8271 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				04E392012F471FDA009F6F4F /* VoiceDictation */,
@@ -276,6 +297,14 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		0494D4222F4854A7009C8271 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0494D3E82F473EE3009C8271 /* whisper */;
+			targetProxy = 0494D4212F4854A7009C8271 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
 		0494D3EA2F473EE3009C8271 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -283,10 +312,14 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_STYLE = Automatic;
 				EXECUTABLE_PREFIX = lib;
-				GCC_PREPROCESSOR_DEFINITIONS = "GGML_USE_METAL=1";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"GGML_USE_METAL=1",
+					"WHISPER_VERSION=\\\"1.8.3\\\"",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/whisper.cpp/include/**",
 					"$(SRCROOT)/whisper.cpp/ggml/include/**",
+					"$(SRCROOT)/whisper.cpp/ggml/src/**",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -299,10 +332,14 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_STYLE = Automatic;
 				EXECUTABLE_PREFIX = lib;
-				GCC_PREPROCESSOR_DEFINITIONS = "GGML_USE_METAL=1";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"GGML_USE_METAL=1",
+					"WHISPER_VERSION=\\\"1.8.3\\\"",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/whisper.cpp/include/**",
 					"$(SRCROOT)/whisper.cpp/ggml/include/**",
+					"$(SRCROOT)/whisper.cpp/ggml/src/**",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -435,10 +472,12 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/whisper.cpp/include/**";
+				INFOPLIST_FILE = VoiceDictation/Resources/Info.plist;
+				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -452,6 +491,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "VoiceDictation/Resources/VoiceDictation-Bridging-Header.h";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -465,10 +505,12 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/whisper.cpp/include/**";
+				INFOPLIST_FILE = VoiceDictation/Resources/Info.plist;
+				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -482,6 +524,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "VoiceDictation/Resources/VoiceDictation-Bridging-Header.h";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 			};
