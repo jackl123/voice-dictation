@@ -29,10 +29,15 @@
 		0494D4192F4742E6009C8271 /* ggml-metal-device.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4162F4742E6009C8271 /* ggml-metal-device.cpp */; };
 		0494D41A2F4742E6009C8271 /* ggml-metal-ops.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4182F4742E6009C8271 /* ggml-metal-ops.cpp */; };
 		0494D41B2F4742E6009C8271 /* ggml-metal-common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4142F4742E6009C8271 /* ggml-metal-common.cpp */; };
-		0494D41C2F4742E6009C8271 /* ggml-metal-context.m in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4152F4742E6009C8271 /* ggml-metal-context.m */; };
-		0494D41D2F4742E6009C8271 /* ggml-metal-device.m in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4172F4742E6009C8271 /* ggml-metal-device.m */; };
+		0494D41C2F4742E6009C8271 /* ggml-metal-context.m in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4152F4742E6009C8271 /* ggml-metal-context.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		0494D41D2F4742E6009C8271 /* ggml-metal-device.m in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4172F4742E6009C8271 /* ggml-metal-device.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		0494D41E2F4742E6009C8271 /* ggml-metal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4132F4742E6009C8271 /* ggml-metal.cpp */; };
 		0494D4202F48544C009C8271 /* libwhisper.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0494D3E92F473EE3009C8271 /* libwhisper.a */; };
+		0494D4262F48F61B009C8271 /* ggml-backend-dl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4252F48F61B009C8271 /* ggml-backend-dl.cpp */; };
+		0494D4282F48F669009C8271 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0494D4272F48F669009C8271 /* Metal.framework */; };
+		0494D42A2F48F672009C8271 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0494D4292F48F672009C8271 /* MetalKit.framework */; };
+		0494D42C2F48F680009C8271 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0494D42B2F48F680009C8271 /* Accelerate.framework */; };
+		0494D42E2F48F689009C8271 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0494D42D2F48F689009C8271 /* CoreAudio.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +77,11 @@
 		0494D4162F4742E6009C8271 /* ggml-metal-device.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = "ggml-metal-device.cpp"; path = "whisper.cpp/ggml/src/ggml-metal/ggml-metal-device.cpp"; sourceTree = "<group>"; };
 		0494D4172F4742E6009C8271 /* ggml-metal-device.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = "ggml-metal-device.m"; path = "whisper.cpp/ggml/src/ggml-metal/ggml-metal-device.m"; sourceTree = "<group>"; };
 		0494D4182F4742E6009C8271 /* ggml-metal-ops.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = "ggml-metal-ops.cpp"; path = "whisper.cpp/ggml/src/ggml-metal/ggml-metal-ops.cpp"; sourceTree = "<group>"; };
+		0494D4252F48F61B009C8271 /* ggml-backend-dl.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = "ggml-backend-dl.cpp"; path = "whisper.cpp/ggml/src/ggml-backend-dl.cpp"; sourceTree = "<group>"; };
+		0494D4272F48F669009C8271 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		0494D4292F48F672009C8271 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		0494D42B2F48F680009C8271 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		0494D42D2F48F689009C8271 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		04E391FF2F471FDA009F6F4F /* VoiceDictation.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceDictation.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -95,6 +105,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0494D42E2F48F689009C8271 /* CoreAudio.framework in Frameworks */,
+				0494D42C2F48F680009C8271 /* Accelerate.framework in Frameworks */,
+				0494D42A2F48F672009C8271 /* MetalKit.framework in Frameworks */,
+				0494D4282F48F669009C8271 /* Metal.framework in Frameworks */,
 				0494D4202F48544C009C8271 /* libwhisper.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -105,6 +119,10 @@
 		0494D41F2F48544C009C8271 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0494D42D2F48F689009C8271 /* CoreAudio.framework */,
+				0494D42B2F48F680009C8271 /* Accelerate.framework */,
+				0494D4292F48F672009C8271 /* MetalKit.framework */,
+				0494D4272F48F669009C8271 /* Metal.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -137,6 +155,7 @@
 				0494D3F62F47421A009C8271 /* ggml-threading.cpp */,
 				0494D3F72F47421A009C8271 /* gguf.cpp */,
 				0494D3ED2F4740AE009C8271 /* whisper.cpp */,
+				0494D4252F48F61B009C8271 /* ggml-backend-dl.cpp */,
 				04E392012F471FDA009F6F4F /* VoiceDictation */,
 				0494D41F2F48544C009C8271 /* Frameworks */,
 				04E392002F471FDA009F6F4F /* Products */,
@@ -275,6 +294,7 @@
 				0494D40C2F47429A009C8271 /* vec.cpp in Sources */,
 				0494D40D2F47429A009C8271 /* binary-ops.cpp in Sources */,
 				0494D40E2F47429A009C8271 /* ggml-cpu.c in Sources */,
+				0494D4262F48F61B009C8271 /* ggml-backend-dl.cpp in Sources */,
 				0494D40F2F47429A009C8271 /* unary-ops.cpp in Sources */,
 				0494D4102F47429A009C8271 /* ggml-cpu.cpp in Sources */,
 				0494D4112F47429A009C8271 /* quants.c in Sources */,
@@ -315,6 +335,8 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"GGML_USE_METAL=1",
 					"WHISPER_VERSION=\\\"1.8.3\\\"",
+					"GGML_VERSION=\\\"0.9.6\\\"",
+					"GGML_COMMIT=\\\"unknown\\\"",
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/whisper.cpp/include/**",
@@ -335,6 +357,8 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"GGML_USE_METAL=1",
 					"WHISPER_VERSION=\\\"1.8.3\\\"",
+					"GGML_VERSION=\\\"0.9.6\\\"",
+					"GGML_COMMIT=\\\"unknown\\\"",
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/whisper.cpp/include/**",
@@ -475,7 +499,10 @@
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/whisper.cpp/include/**";
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/whisper.cpp/include/**",
+					"$(SRCROOT)/whisper.cpp/ggml/include/**",
+				);
 				INFOPLIST_FILE = VoiceDictation/Resources/Info.plist;
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -508,7 +535,10 @@
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/whisper.cpp/include/**";
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/whisper.cpp/include/**",
+					"$(SRCROOT)/whisper.cpp/ggml/include/**",
+				);
 				INFOPLIST_FILE = VoiceDictation/Resources/Info.plist;
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

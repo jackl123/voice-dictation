@@ -6,7 +6,7 @@ import AppKit
 /// The tap runs on a dedicated background thread so it never blocks the main run loop.
 final class HotKeyMonitor {
     private weak var appState: AppState?
-    private var eventTap: CFMachPort?
+    fileprivate var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var tapThread: Thread?
     private var tapRunLoop: CFRunLoop?
@@ -28,7 +28,7 @@ final class HotKeyMonitor {
         // The tap keeps the process alive as long as it is installed, so no retain cycle issue.
         let selfPtr = Unmanaged.passRetained(self).toOpaque()
 
-        guard let tap = CGEventTap.create(
+        guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,

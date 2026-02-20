@@ -28,9 +28,9 @@ actor WhisperTranscriber {
     }
 
     /// Reload with a different model (e.g. after the user changes settings).
-    func reloadModel(at url: URL) async {
+    func reloadModel(at url: URL) {
         bridge = nil
-        await loadModel(at: url)
+        loadModel(at: url)
     }
 
     // MARK: - Transcription
@@ -46,7 +46,7 @@ actor WhisperTranscriber {
         }
 
         // Run the blocking C call on a background executor so we don't block the actor's caller.
-        return try await Task.detached(priority: .userInitiated) {
+        return await Task.detached(priority: .userInitiated) {
             let result = samples.withUnsafeBufferPointer { ptr -> String? in
                 bridge.transcribeSamples(ptr.baseAddress!, count: ptr.count, language: language)
             }

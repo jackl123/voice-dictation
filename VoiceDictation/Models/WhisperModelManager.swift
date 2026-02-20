@@ -37,6 +37,7 @@ final class WhisperModelManager: ObservableObject {
     @Published var downloadError: String?
 
     private var downloadTask: URLSessionDownloadTask?
+    private var progressObserver: ProgressObserver?
 
     func isModelDownloaded(named name: String) -> Bool {
         let url = WhisperModelManager.modelsDirectory.appendingPathComponent("ggml-\(name).bin")
@@ -66,6 +67,7 @@ final class WhisperModelManager: ObservableObject {
         let session = URLSession(configuration: .default, delegate: nil, delegateQueue: .main)
         downloadTask = session.downloadTask(with: url) { [weak self] tempURL, response, error in
             DispatchQueue.main.async {
+                self?.cleanupObserver()
                 self?.isDownloading = false
                 if let error {
                     self?.downloadError = error.localizedDescription
@@ -84,11 +86,13 @@ final class WhisperModelManager: ObservableObject {
             }
         }
 
-        // Track download progress via observation.
+        // Track download progress via KVO observation.
+        let observer = ProgressObserver { [weak self] progress in
+            DispatchQueue.main.async { self?.downloadProgress = progress }
+        }
+        progressObserver = observer
         downloadTask?.progress.addObserver(
-            ProgressObserver { [weak self] progress in
-                DispatchQueue.main.async { self?.downloadProgress = progress }
-            },
+            observer,
             forKeyPath: "fractionCompleted",
             options: .new,
             context: nil
@@ -98,8 +102,16 @@ final class WhisperModelManager: ObservableObject {
     }
 
     func cancelDownload() {
+        cleanupObserver()
         downloadTask?.cancel()
         isDownloading = false
+    }
+
+    private func cleanupObserver() {
+        if let observer = progressObserver {
+            downloadTask?.progress.removeObserver(observer, forKeyPath: "fractionCompleted")
+            progressObserver = nil
+        }
     }
 }
 

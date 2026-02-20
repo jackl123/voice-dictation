@@ -3,7 +3,7 @@ import SwiftUI
 import Combine
 
 /// Manages the menu bar status item and its popover.
-final class MenuBarController {
+final class MenuBarController: NSObject {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var appState: AppState
@@ -11,6 +11,7 @@ final class MenuBarController {
 
     init(appState: AppState) {
         self.appState = appState
+        super.init()
         setupStatusItem()
         setupPopover()
         observeState()
