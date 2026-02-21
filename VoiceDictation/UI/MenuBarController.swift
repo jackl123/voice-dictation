@@ -13,7 +13,8 @@ final class MenuBarController: NSObject {
         self.appState = appState
         super.init()
         setupStatusItem()
-        setupPopover()
+        // Popover is created lazily on first click — not eagerly —
+        // so SwiftUI view construction doesn't interfere with hover events.
         observeState()
     }
 
@@ -30,7 +31,10 @@ final class MenuBarController: NSObject {
         }
     }
 
-    private func setupPopover() {
+    /// Creates the popover lazily on first use.
+    private func getOrCreatePopover() -> NSPopover {
+        if let popover { return popover }
+
         let popover = NSPopover()
         popover.contentSize = NSSize(width: 280, height: 220)
         popover.behavior = .transient
@@ -40,6 +44,7 @@ final class MenuBarController: NSObject {
                 .environmentObject(appState)
         )
         self.popover = popover
+        return popover
     }
 
     private func observeState() {
@@ -56,10 +61,11 @@ final class MenuBarController: NSObject {
     @objc private func togglePopover() {
         guard let button = statusItem?.button else { return }
 
-        if let popover, popover.isShown {
-            popover.performClose(nil)
+        let pop = getOrCreatePopover()
+        if pop.isShown {
+            pop.performClose(nil)
         } else {
-            popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            pop.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             NSApp.activate(ignoringOtherApps: true)
         }
     }

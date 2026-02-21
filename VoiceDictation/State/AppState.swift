@@ -30,6 +30,7 @@ final class AppState: ObservableObject {
     @Published var recordingState: RecordingState = .idle
     @Published var lastTranscript: String = ""
     @Published var permissionsGranted: Bool = false
+    @Published var modelLoaded: Bool = false
 
     // Child components
     let recorder = AudioRecorder()
@@ -38,6 +39,13 @@ final class AppState: ObservableObject {
 
     // Callback hook for AppDelegate to wire additional side-effects.
     var onStartRecording: (() -> Void)?
+
+    /// Called from AppDelegate after the model is loaded on a background thread.
+    func setBridge(_ bridge: WhisperBridge) {
+        Task {
+            await transcriber.setBridge(bridge)
+        }
+    }
 
     // MARK: - Hotkey handlers
 

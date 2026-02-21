@@ -12,8 +12,10 @@
     WhisperBridge *bridge = [[WhisperBridge alloc] init];
 
     struct whisper_context_params params = whisper_context_default_params();
-    // Use Metal GPU acceleration on Apple Silicon when available.
-    params.use_gpu = true;
+    // Use CPU-only mode to avoid Metal GPU contention with the main
+    // thread's rendering during model loading. CPU inference on Apple
+    // Silicon is fast enough for tiny.en / base.en models.
+    params.use_gpu = false;
 
     struct whisper_context *ctx = whisper_init_from_file_with_params(path.UTF8String, params);
     if (ctx == NULL) {

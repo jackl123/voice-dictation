@@ -5,32 +5,36 @@ import Foundation
 actor WhisperTranscriber {
     private var bridge: WhisperBridge?
     private var modelURL: URL?
+    private(set) var isModelLoaded: Bool = false
 
     // MARK: - Model loading
 
-    /// Call once at startup. Loads the bundled tiny.en model by default.
-    func loadModel(at url: URL? = nil) {
-        let target = url ?? WhisperModelManager.defaultModelURL
-
-        guard let path = target?.path, FileManager.default.fileExists(atPath: path) else {
-            print("[WhisperTranscriber] Model file not found at: \(target?.path ?? "nil")")
-            return
-        }
-
-        bridge = WhisperBridge(modelPath: path)
-        modelURL = target
-
-        if bridge == nil {
-            print("[WhisperTranscriber] Failed to load bridge for model at: \(path)")
-        } else {
-            print("[WhisperTranscriber] Model loaded: \(path)")
-        }
+    /// Accept a pre-loaded WhisperBridge from outside the actor.
+    /// The heavy model loading is done on a GCD background queue in AppDelegate,
+    /// so by the time this is called the bridge is ready.
+    func setBridge(_ loadedBridge: WhisperBridge) {
+        bridge = loadedBridge
+        isModelLoaded = true
+        print("[WhisperTranscriber] Bridge set, model is ready")
     }
 
     /// Reload with a different model (e.g. after the user changes settings).
-    func reloadModel(at url: URL) {
+    func reloadModel(at url: URL) async {
         bridge = nil
-        loadModel(at: url)
+        isModelLoaded = false
+
+        guard let path = url.path as String?,
+              FileManager.default.fileExists(atPath: path) else {
+            print("[WhisperTranscriber] Model file not found at: \(url.path)")
+            return
+        }
+
+        let loadedBridge = await Task.detached(priority: .userInitiated) {
+            return WhisperBridge(modelPath: path)
+        }.value
+
+        bridge = loadedBridge
+        isModelLoaded = (bridge != nil)
     }
 
     // MARK: - Transcription

@@ -8,28 +8,60 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotKeyMonitor: HotKeyMonitor?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Hide the app from the Dock (belt-and-suspenders alongside LSUIElement).
         NSApp.setActivationPolicy(.accessory)
 
-        // Wire up the state machine callbacks before starting anything.
-        appState.onStartRecording = { [weak self] in
-            self?.hotKeyMonitor?.isRecording = true
-        }
+        print("[AppDelegate] === LAUNCH START ===")
 
-        // Set up the menu bar presence.
+        // STEP 1: Just the menu bar icon — nothing else.
+        print("[AppDelegate] Creating menu bar...")
         menuBarController = MenuBarController(appState: appState)
+        print("[AppDelegate] Menu bar created.")
 
-        // Check permissions and guide the user if needed.
-        PermissionChecker.shared.checkAll(appState: appState)
+        // STEP 2: Defer EVERYTHING else by 2 seconds so we can test
+        // whether the menu bar icon alone causes the beachball.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            guard let self else { return }
+            print("[AppDelegate] Deferred init starting...")
 
-        // Start listening for the global hotkey.
-        hotKeyMonitor = HotKeyMonitor(appState: appState)
-        hotKeyMonitor?.start()
+            // Wire up callbacks
+            self.appState.onStartRecording = { [weak self] in
+                self?.hotKeyMonitor?.isRecording = true
+            }
 
-        // Load the Whisper model in the background so it is ready when needed.
-        Task {
-            await appState.transcriber.loadModel()
+            // Permissions
+            PermissionChecker.shared.checkAll(appState: self.appState)
+
+            // Hotkey monitor
+            self.hotKeyMonitor = HotKeyMonitor(appState: self.appState)
+            self.hotKeyMonitor?.start()
+
+            // Model loading
+            let state = self.appState
+            DispatchQueue.global(qos: .userInitiated).async {
+                let modelURL = WhisperModelManager.defaultModelURL
+                guard let path = modelURL?.path,
+                      FileManager.default.fileExists(atPath: path) else {
+                    print("[AppDelegate] Model file not found")
+                    return
+                }
+
+                print("[AppDelegate] Loading model from: \(path)")
+                let bridge = WhisperBridge(modelPath: path)
+                let success = bridge != nil
+                print("[AppDelegate] Model loaded: \(success)")
+
+                DispatchQueue.main.async {
+                    if let bridge {
+                        state.setBridge(bridge)
+                    }
+                    state.modelLoaded = success
+                }
+            }
+
+            print("[AppDelegate] Deferred init complete.")
         }
+
+        print("[AppDelegate] === LAUNCH END (main sync) ===")
     }
 
     func applicationWillTerminate(_ notification: Notification) {

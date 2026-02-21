@@ -14,14 +14,19 @@ final class PermissionChecker: ObservableObject {
     private var pollingTimer: Timer?
 
     private init() {
-        refreshStatus()
+        // Don't check permissions eagerly — defer to checkAll() so
+        // AXIsProcessTrusted() IPC doesn't block singleton construction.
     }
 
     // MARK: - Check all
 
     func checkAll(appState: AppState) {
-        refreshStatus()
-        startPolling()
+        // Defer the first permission check so AXIsProcessTrusted() IPC
+        // doesn't block the main thread during app launch.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.refreshStatus()
+            self?.startPolling()
+        }
     }
 
     // MARK: - Microphone
@@ -58,7 +63,7 @@ final class PermissionChecker: ObservableObject {
 
     private func startPolling() {
         pollingTimer?.invalidate()
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
             self?.refreshStatus()
         }
     }
