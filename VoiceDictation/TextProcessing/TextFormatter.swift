@@ -14,26 +14,57 @@ final class TextFormatter {
 
     // MARK: - Public API
 
-    /// Format the raw transcript. Uses OpenAI if enabled and key is set,
-    /// otherwise falls back to rule-based formatting.
-    func format(_ text: String) async -> String {
-        let apiKey = UserDefaults.standard.string(forKey: "openaiApiKey") ?? ""
-        let useAI = UserDefaults.standard.bool(forKey: "useAIFormatting")
+    /// The user's chosen writing tone.
+    enum Tone: String {
+        case formal      = "formal"       // Full caps + full punctuation
+        case casual      = "casual"       // Full caps + lighter punctuation
+        case veryCasual  = "very_casual"  // No caps + lighter punctuation
 
-        if useAI && !apiKey.isEmpty {
-            // Try API formatting; fall back to rule-based on failure.
-            if let aiFormatted = await formatWithOpenAI(text, apiKey: apiKey) {
-                return aiFormatted
+        /// Human-readable description for the AI prompt.
+        var description: String {
+            switch self {
+            case .formal:     return "Formal: proper capitalisation, full punctuation (commas, periods, etc.)"
+            case .casual:     return "Casual: normal capitalisation, lighter punctuation (skip commas where optional, keep question marks and periods)"
+            case .veryCasual: return "Very casual: all lowercase, minimal punctuation (only question marks, skip most commas and periods)"
             }
         }
+    }
 
-        return applyRuleBasedFormatting(text)
+    /// Reads the current tone from UserDefaults.
+    private var currentTone: Tone {
+        let raw = UserDefaults.standard.string(forKey: "writingTone") ?? "formal"
+        return Tone(rawValue: raw) ?? .formal
+    }
+
+    /// Format the raw transcript based on the user's formatting preference.
+    /// - "ai": Uses OpenAI GPT-4o-mini, falls back to rule-based on failure.
+    /// - "rules": Converts spoken commands to formatting.
+    /// - "off": Returns text as-is.
+    func format(_ text: String) async -> String {
+        let mode = UserDefaults.standard.string(forKey: "formattingMode") ?? "rules"
+        let apiKey = UserDefaults.standard.string(forKey: "openaiApiKey") ?? ""
+        let tone = currentTone
+
+        switch mode {
+        case "ai":
+            if !apiKey.isEmpty, let aiFormatted = await formatWithOpenAI(text, apiKey: apiKey, tone: tone) {
+                return aiFormatted
+            }
+            // Fall back to rule-based if API fails.
+            return applyRuleBasedFormatting(text, tone: tone)
+        case "rules":
+            return applyRuleBasedFormatting(text, tone: tone)
+        default:
+            // "off" — return as-is.
+            return text
+        }
     }
 
     // MARK: - Rule-based formatting
 
-    /// Detects spoken formatting commands and converts them to actual characters.
-    func applyRuleBasedFormatting(_ text: String) -> String {
+    /// Detects spoken formatting commands and converts them to actual characters,
+    /// then applies the chosen tone.
+    func applyRuleBasedFormatting(_ text: String, tone: Tone = .formal) -> String {
         var result = text
 
         // Structural commands (order matters — do multi-word replacements first).
@@ -88,35 +119,102 @@ final class TextFormatter {
             options: .regularExpression
         )
 
-        // Auto-capitalize after sentence-ending punctuation.
-        result = capitalizeAfterSentenceEnd(result)
-
-        // Capitalize the very first character.
-        if let first = result.first, first.isLetter && first.isLowercase {
-            result = first.uppercased() + result.dropFirst()
-        }
+        // Apply tone-specific transformations.
+        result = applyTone(result, tone: tone)
 
         return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    // MARK: - Tone application
+
+    /// Applies capitalisation and punctuation rules based on the selected tone.
+    private func applyTone(_ text: String, tone: Tone) -> String {
+        var result = text
+
+        switch tone {
+        case .formal:
+            // Full capitalisation + all punctuation kept as-is.
+            result = capitalizeAfterSentenceEnd(result)
+            if let first = result.first, first.isLetter && first.isLowercase {
+                result = first.uppercased() + result.dropFirst()
+            }
+
+        case .casual:
+            // Normal capitalisation, but strip some optional commas
+            // (keep sentence-ending punctuation and question marks).
+            result = capitalizeAfterSentenceEnd(result)
+            if let first = result.first, first.isLetter && first.isLowercase {
+                result = first.uppercased() + result.dropFirst()
+            }
+
+        case .veryCasual:
+            // All lowercase, minimal punctuation.
+            result = result.lowercased()
+            // Remove periods at end of sentences (but keep ? and !).
+            result = result.replacingOccurrences(
+                of: "\\.(?=\\s|$)",
+                with: "",
+                options: .regularExpression
+            )
+            // Remove commas.
+            result = result.replacingOccurrences(of: ",", with: "")
+            // Remove semicolons and colons.
+            result = result.replacingOccurrences(of: ";", with: "")
+            result = result.replacingOccurrences(of: ":", with: "")
+            // Clean up double spaces left by removed punctuation.
+            result = result.replacingOccurrences(
+                of: "  +",
+                with: " ",
+                options: .regularExpression
+            )
+        }
+
+        return result
     }
 
     // MARK: - OpenAI API formatting
 
     /// Sends raw transcript to GPT-4o-mini for intelligent formatting.
     /// Returns nil on failure so the caller can fall back to rule-based.
-    private func formatWithOpenAI(_ text: String, apiKey: String) async -> String? {
+    private func formatWithOpenAI(_ text: String, apiKey: String, tone: Tone = .formal) async -> String? {
         guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
             return nil
+        }
+
+        let toneInstruction: String
+        switch tone {
+        case .formal:
+            toneInstruction = """
+            Tone: FORMAL
+            - Use proper capitalisation (sentence case)
+            - Use full punctuation: commas, periods, question marks, etc.
+            - Example: "Hey, are you free for lunch tomorrow? Let's do 12 if that works for you."
+            """
+        case .casual:
+            toneInstruction = """
+            Tone: CASUAL
+            - Use normal capitalisation (sentence case)
+            - Use lighter punctuation: keep periods and question marks, but skip optional commas
+            - Example: "Hey are you free for lunch tomorrow? Let's do 12 if that works for you"
+            """
+        case .veryCasual:
+            toneInstruction = """
+            Tone: VERY CASUAL
+            - Use all lowercase letters (no capitalisation at all, not even for "I")
+            - Use minimal punctuation: only question marks, skip periods and most commas
+            - Example: "hey are you free for lunch tomorrow? let's do 12 if that works for you"
+            """
         }
 
         let systemPrompt = """
         You are a text formatter for voice dictation. The user has spoken text into a \
         microphone and it has been transcribed. Your job is to format it properly:
-        - Add correct punctuation and capitalization
-        - Add paragraph breaks where the speaker clearly changes topic
         - Format bullet points or numbered lists if the speaker indicates them
         - Fix obvious transcription errors if the intended word is clear
         - Preserve the speaker's exact words and meaning
         - Return ONLY the formatted text, no explanations or preamble
+
+        \(toneInstruction)
         """
 
         let requestBody: [String: Any] = [

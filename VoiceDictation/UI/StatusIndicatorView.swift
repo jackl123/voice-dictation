@@ -107,7 +107,7 @@ struct StatusIndicatorView: View {
                     Text(appState.recordingState.statusText)
                         .font(.headline)
                     if appState.recordingState == .idle {
-                        Text("Hold \u{2325}Space anywhere to dictate")
+                        Text("Hold or tap \(HotKeyConfiguration.load().displayString) anywhere to dictate")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

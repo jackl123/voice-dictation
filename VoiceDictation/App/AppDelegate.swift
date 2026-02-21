@@ -5,7 +5,7 @@ import AVFoundation
 class AppDelegate: NSObject, NSApplicationDelegate {
     let appState = AppState()
     private var menuBarController: MenuBarController?
-    private var hotKeyMonitor: HotKeyMonitor?
+    private(set) var hotKeyMonitor: HotKeyMonitor?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -29,26 +29,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.hotKeyMonitor?.start()
         }
 
-        // Load the Whisper model on a background thread.
+        // Load the Whisper model on a background thread (only if using local transcription).
         let state = self.appState
-        DispatchQueue.global(qos: .userInitiated).async {
-            let modelURL = WhisperModelManager.defaultModelURL
-            guard let path = modelURL?.path,
-                  FileManager.default.fileExists(atPath: path) else {
-                print("[AppDelegate] Model file not found")
-                return
-            }
+        let transcriptionMode = UserDefaults.standard.string(forKey: "transcriptionMode") ?? "local"
 
-            print("[AppDelegate] Loading model from: \(path)")
-            let bridge = WhisperBridge(modelPath: path)
-            let success = bridge != nil
-            print("[AppDelegate] Model loaded: \(success)")
-
-            DispatchQueue.main.async {
-                if let bridge {
-                    state.setBridge(bridge)
+        if transcriptionMode == "api" {
+            // API mode — no local model needed. Mark as ready immediately.
+            state.modelLoaded = true
+            print("[AppDelegate] Using API transcription, skipping local model load")
+        } else {
+            DispatchQueue.global(qos: .userInitiated).async {
+                let modelURL = WhisperModelManager.defaultModelURL
+                guard let path = modelURL?.path,
+                      FileManager.default.fileExists(atPath: path) else {
+                    print("[AppDelegate] Model file not found")
+                    return
                 }
-                state.modelLoaded = success
+
+                print("[AppDelegate] Loading model from: \(path)")
+                let bridge = WhisperBridge(modelPath: path)
+                let success = bridge != nil
+                print("[AppDelegate] Model loaded: \(success)")
+
+                DispatchQueue.main.async {
+                    if let bridge {
+                        state.setBridge(bridge)
+                    }
+                    state.modelLoaded = success
+                }
             }
         }
     }

@@ -3,10 +3,15 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
 
+    @AppStorage("transcriptionMode") private var transcriptionMode: String = "local"
+    @AppStorage("openaiApiKey") private var openaiApiKey: String = ""
     @AppStorage("selectedModelName") private var selectedModelName: String = "tiny.en"
     @AppStorage("language") private var language: String = "en"
-    @AppStorage("useAIFormatting") private var useAIFormatting: Bool = false
-    @AppStorage("openaiApiKey") private var openaiApiKey: String = ""
+    @AppStorage("formattingMode") private var formattingMode: String = "rules"
+    @AppStorage("writingTone") private var writingTone: String = "formal"
+    @AppStorage("soundFeedbackEnabled") private var soundFeedbackEnabled: Bool = true
+
+    @ObservedObject private var launchAtLogin = LaunchAtLogin.shared
 
     private let modelOptions = ["tiny.en", "base.en", "small.en", "medium.en"]
     private let languageOptions = [
@@ -21,24 +26,114 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Model") {
-                Picker("Whisper model", selection: $selectedModelName) {
-                    ForEach(modelOptions, id: \.self) { name in
-                        Text(modelLabel(name)).tag(name)
-                    }
-                }
-                .pickerStyle(.menu)
+            // MARK: - General
+            Section("General") {
+                Toggle("Launch at Login", isOn: $launchAtLogin.isEnabled)
 
-                Text("Larger models are more accurate but slower. tiny.en is a great starting point.")
+                Toggle("Sound feedback", isOn: $soundFeedbackEnabled)
+                Text("Play a short tone when recording starts and stops.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-
-                Button("Download selected model") {
-                    WhisperModelManager.shared.downloadModel(named: selectedModelName)
-                }
-                .disabled(WhisperModelManager.shared.isModelDownloaded(named: selectedModelName))
             }
 
+            // MARK: - OpenAI API Key
+            Section("OpenAI API Key") {
+                SecureField("sk-...", text: $openaiApiKey)
+                    .textFieldStyle(.roundedBorder)
+
+                if openaiApiKey.isEmpty {
+                    Text("Add an OpenAI API key to enable fast cloud transcription and AI formatting. Get one at platform.openai.com")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text("API key set")
+                            .font(.caption)
+                    }
+                }
+            }
+
+            // MARK: - Transcription
+            Section("Transcription") {
+                Picker("Method", selection: $transcriptionMode) {
+                    Text("Local whisper.cpp (free, slower)").tag("local")
+                    Text("OpenAI Whisper API (fast, paid)").tag("api")
+                }
+                .pickerStyle(.radioGroup)
+
+                if transcriptionMode == "api" {
+                    if openaiApiKey.isEmpty {
+                        Label("Enter your API key above to use cloud transcription", systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    } else {
+                        Text("~\u{00A3}0.005 per minute of audio. A typical 10-second clip costs less than \u{00A3}0.001.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if transcriptionMode == "local" {
+                    Picker("Whisper model", selection: $selectedModelName) {
+                        ForEach(modelOptions, id: \.self) { name in
+                            Text(modelLabel(name)).tag(name)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Button("Download selected model") {
+                        WhisperModelManager.shared.downloadModel(named: selectedModelName)
+                    }
+                    .disabled(WhisperModelManager.shared.isModelDownloaded(named: selectedModelName))
+                }
+            }
+
+            // MARK: - Formatting
+            Section("Formatting") {
+                Picker("Method", selection: $formattingMode) {
+                    Text("Off (raw text)").tag("off")
+                    Text("Rule-based (free, offline)").tag("rules")
+                    Text("AI \u{2014} GPT-4o-mini (best quality)").tag("ai")
+                }
+                .pickerStyle(.radioGroup)
+
+                if formattingMode == "ai" {
+                    if openaiApiKey.isEmpty {
+                        Label("Enter your API key above to use AI formatting", systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    } else {
+                        Text("Adds proper punctuation, capitalisation, bullet points, and paragraph structure. Costs fractions of a penny per use.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if formattingMode == "rules" {
+                    Text("Say \"bullet point\", \"new line\", \"comma\", etc. to add formatting. Free and works offline.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if formattingMode != "off" {
+                    Divider()
+
+                    Picker("Tone", selection: $writingTone) {
+                        Text("Formal \u{2014} Hey, are you free for lunch tomorrow?").tag("formal")
+                        Text("Casual \u{2014} Hey are you free for lunch tomorrow?").tag("casual")
+                        Text("Very casual \u{2014} hey are you free for lunch tomorrow?").tag("very_casual")
+                    }
+                    .pickerStyle(.radioGroup)
+
+                    Text(toneDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            // MARK: - Language
             Section("Language") {
                 Picker("Language", selection: $language) {
                     ForEach(languageOptions, id: \.0) { code, name in
@@ -48,46 +143,37 @@ struct SettingsView: View {
                 .pickerStyle(.menu)
             }
 
-            Section("Formatting") {
-                Toggle("AI formatting (OpenAI)", isOn: $useAIFormatting)
-
-                if useAIFormatting {
-                    SecureField("OpenAI API Key", text: $openaiApiKey)
-                        .textFieldStyle(.roundedBorder)
-
-                    Text("Uses GPT-4o-mini to intelligently format your transcription with proper punctuation, bullet points, and structure. Costs roughly \u{00A3}0.01/month with typical use.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    if !openaiApiKey.isEmpty {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                            Text("API key set")
-                                .font(.caption)
-                        }
-                    }
-                }
-
-                Text("Without AI: spoken commands like \"bullet point\", \"new line\", \"comma\" are converted to formatting automatically.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
+            // MARK: - Hotkey
             Section("Hotkey") {
-                LabeledContent("Record", value: "\u{2325} Space (hold)")
-                Text("Hold Option+Space to record, release to transcribe.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HotKeyRecorderView(onHotkeyChanged: {
+                    // Tell the running HotKeyMonitor to pick up the new configuration.
+                    if let delegate = NSApp.delegate as? AppDelegate {
+                        delegate.hotKeyMonitor?.reloadConfiguration()
+                    }
+                })
             }
 
+            // MARK: - Permissions
             Section("Permissions") {
                 PermissionsStatusView()
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 500)
+        .frame(width: 440, height: 880)
         .padding()
+    }
+
+    private var toneDescription: String {
+        switch writingTone {
+        case "formal":
+            return "Proper capitalisation with full punctuation. Best for emails and professional writing."
+        case "casual":
+            return "Normal capitalisation with lighter punctuation. Good for messages and everyday writing."
+        case "very_casual":
+            return "All lowercase with minimal punctuation. Perfect for texting and chat."
+        default:
+            return ""
+        }
     }
 
     private func modelLabel(_ name: String) -> String {
