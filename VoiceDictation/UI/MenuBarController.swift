@@ -2,12 +2,14 @@ import AppKit
 import SwiftUI
 import Combine
 
-/// Manages the menu bar status item and its popover.
+/// Manages the menu bar status item, popover, floating overlay, and settings window.
 final class MenuBarController: NSObject {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var appState: AppState
     private var cancellables = Set<AnyCancellable>()
+    private var overlayWindow: RecordingOverlayWindow?
+    private var settingsWindow: NSWindow?
 
     init(appState: AppState) {
         self.appState = appState
@@ -16,6 +18,7 @@ final class MenuBarController: NSObject {
         // Popover is created lazily on first click — not eagerly —
         // so SwiftUI view construction doesn't interfere with hover events.
         observeState()
+        overlayWindow = RecordingOverlayWindow(appState: appState)
     }
 
     // MARK: - Setup
@@ -40,8 +43,10 @@ final class MenuBarController: NSObject {
         popover.behavior = .transient
         popover.animates = true
         popover.contentViewController = NSHostingController(
-            rootView: StatusIndicatorView()
-                .environmentObject(appState)
+            rootView: StatusIndicatorView(onOpenSettings: { [weak self] in
+                self?.openSettings()
+            })
+            .environmentObject(appState)
         )
         self.popover = popover
         return popover
@@ -70,6 +75,34 @@ final class MenuBarController: NSObject {
         }
     }
 
+    // MARK: - Settings window
+
+    func openSettings() {
+        // Close the popover first.
+        popover?.performClose(nil)
+
+        if let existing = settingsWindow, existing.isVisible {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let settingsView = SettingsView()
+            .environmentObject(appState)
+
+        let hostingController = NSHostingController(rootView: settingsView)
+
+        let window = NSWindow(contentViewController: hostingController)
+        window.title = "VoiceDictation Settings"
+        window.styleMask = [.titled, .closable]
+        window.setContentSize(NSSize(width: 440, height: 520))
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+
+        NSApp.activate(ignoringOtherApps: true)
+        settingsWindow = window
+    }
+
     // MARK: - Icon updates
 
     private func updateStatusItem(for state: RecordingState) {
@@ -86,6 +119,8 @@ final class MenuBarController: NSObject {
             symbolName = "mic.fill"
         case .transcribing:
             symbolName = "waveform"
+        case .formatting:
+            symbolName = "text.badge.checkmark"
         case .error:
             symbolName = "mic.slash"
         }

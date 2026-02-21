@@ -43,6 +43,7 @@
 		0494D4342F4998AF009C8271 /* cpu-feats.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4332F4998AF009C8271 /* cpu-feats.cpp */; };
 		0494D4372F49B456009C8271 /* quants.c in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4352F49B456009C8271 /* quants.c */; };
 		0494D4382F49B456009C8271 /* repack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0494D4362F49B456009C8271 /* repack.cpp */; };
+		0494D43E2F49C096009C8271 /* TextFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0494D43D2F49C096009C8271 /* TextFormatter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -92,6 +93,7 @@
 		0494D4332F4998AF009C8271 /* cpu-feats.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = "cpu-feats.cpp"; path = "whisper.cpp/ggml/src/ggml-cpu/arch/arm/cpu-feats.cpp"; sourceTree = "<group>"; };
 		0494D4352F49B456009C8271 /* quants.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = quants.c; path = "whisper.cpp/ggml/src/ggml-cpu/arch/arm/quants.c"; sourceTree = "<group>"; };
 		0494D4362F49B456009C8271 /* repack.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = repack.cpp; path = "whisper.cpp/ggml/src/ggml-cpu/arch/arm/repack.cpp"; sourceTree = "<group>"; };
+		0494D43D2F49C096009C8271 /* TextFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TextFormatter.swift; path = VoiceDictation/TextProcessing/TextFormatter.swift; sourceTree = SOURCE_ROOT; };
 		04E391FF2F471FDA009F6F4F /* VoiceDictation.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceDictation.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -137,9 +139,18 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		0494D43C2F49C03D009C8271 /* TextProcessing */ = {
+			isa = PBXGroup;
+			children = (
+				0494D43D2F49C096009C8271 /* TextFormatter.swift */,
+			);
+			path = TextProcessing;
+			sourceTree = "<group>";
+		};
 		04E391F62F471FDA009F6F4F = {
 			isa = PBXGroup;
 			children = (
+				0494D43C2F49C03D009C8271 /* TextProcessing */,
 				0494D4132F4742E6009C8271 /* ggml-metal.cpp */,
 				0494D4142F4742E6009C8271 /* ggml-metal-common.cpp */,
 				0494D4152F4742E6009C8271 /* ggml-metal-context.m */,
@@ -332,6 +343,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0494D43E2F49C096009C8271 /* TextFormatter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -7,16 +7,19 @@ enum RecordingState: Equatable {
     case idle
     case recording
     case transcribing
+    case formatting
     case error(String)
 
     var isRecording: Bool { self == .recording }
     var isTranscribing: Bool { self == .transcribing }
+    var isFormatting: Bool { self == .formatting }
 
     var statusText: String {
         switch self {
-        case .idle:         return "Hold ⌥Space to dictate"
-        case .recording:    return "Recording..."
-        case .transcribing: return "Transcribing..."
+        case .idle:           return "Hold \u{2325}Space to dictate"
+        case .recording:      return "Recording..."
+        case .transcribing:   return "Transcribing..."
+        case .formatting:     return "Formatting..."
         case .error(let msg): return "Error: \(msg)"
         }
     }
@@ -36,6 +39,7 @@ final class AppState: ObservableObject {
     let recorder = AudioRecorder()
     let transcriber = WhisperTranscriber()
     let injector = TextInjector()
+    let formatter = TextFormatter.shared
 
     // Callback hook for AppDelegate to wire additional side-effects.
     var onStartRecording: (() -> Void)?
@@ -76,7 +80,12 @@ final class AppState: ObservableObject {
         Task {
             do {
                 let text = try await transcriber.transcribe(samples)
-                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                // Format the raw transcript.
+                recordingState = .formatting
+                let formatted = await formatter.format(text)
+
+                let trimmed = formatted.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty {
                     lastTranscript = trimmed
                     injector.inject(trimmed)

@@ -5,6 +5,9 @@ struct StatusIndicatorView: View {
     @EnvironmentObject var appState: AppState
     @ObservedObject private var permissions = PermissionChecker.shared
 
+    /// Callback to open the settings window, provided by MenuBarController.
+    var onOpenSettings: (() -> Void)?
+
     var body: some View {
         VStack(spacing: 16) {
             // State indicator
@@ -55,7 +58,7 @@ struct StatusIndicatorView: View {
             // Footer buttons
             HStack {
                 Button("Settings") {
-                    openSettings()
+                    onOpenSettings?()
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
@@ -71,23 +74,6 @@ struct StatusIndicatorView: View {
         }
         .padding(16)
         .frame(width: 280)
-    }
-
-    // MARK: - Settings opener
-
-    private func openSettings() {
-        // Close the popover first so it doesn't steal focus.
-        if let popover = NSApp.windows.compactMap({ $0.contentViewController?.view.window }).first {
-            popover.close()
-        }
-
-        // Try the macOS 14+ selector first, then fall back to macOS 13.
-        if NSApp.responds(to: Selector(("showSettingsWindow:"))) {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        } else {
-            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-        }
-        NSApp.activate(ignoringOtherApps: true)
     }
 
     // MARK: - Subviews
@@ -150,6 +136,7 @@ struct StatusIndicatorView: View {
         case .idle:         return .secondary
         case .recording:    return .red
         case .transcribing: return .blue
+        case .formatting:   return .purple
         case .error:        return .orange
         }
     }
@@ -159,6 +146,7 @@ struct StatusIndicatorView: View {
         case .idle:         return "mic"
         case .recording:    return "mic.fill"
         case .transcribing: return "waveform"
+        case .formatting:   return "text.badge.checkmark"
         case .error:        return "exclamationmark.triangle"
         }
     }
