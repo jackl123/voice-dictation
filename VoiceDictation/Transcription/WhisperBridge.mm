@@ -12,9 +12,9 @@
     WhisperBridge *bridge = [[WhisperBridge alloc] init];
 
     struct whisper_context_params params = whisper_context_default_params();
-    // Use CPU-only mode to avoid Metal GPU contention with the main
-    // thread's rendering during model loading. CPU inference on Apple
-    // Silicon is fast enough for tiny.en / base.en models.
+    // CPU-only mode. The Metal backend in this Xcode build has incomplete
+    // shader/runtime setup that causes ggml_abort. CPU on Apple Silicon
+    // is fast enough for base.en and smaller models.
     params.use_gpu = false;
 
     struct whisper_context *ctx = whisper_init_from_file_with_params(path.UTF8String, params);

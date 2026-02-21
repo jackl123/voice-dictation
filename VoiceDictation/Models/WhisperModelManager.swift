@@ -13,17 +13,21 @@ final class WhisperModelManager: ObservableObject {
         return appSupport.appendingPathComponent("VoiceDictation/models", isDirectory: true)
     }
 
-    /// The default model URL. First looks in the app bundle (for bundled tiny.en),
-    /// then falls back to Application Support.
+    /// The default model URL. Prefers the best available model in this order:
+    /// base.en > tiny.en, checking both bundle and Application Support.
     static var defaultModelURL: URL? {
-        // 1. Check the app bundle (set this up in Xcode: drag ggml-tiny.en.bin into Resources).
-        if let bundled = Bundle.main.url(forResource: "ggml-tiny.en", withExtension: "bin") {
-            return bundled
-        }
-        // 2. Fall back to Application Support.
-        let appSupportURL = modelsDirectory.appendingPathComponent("ggml-tiny.en.bin")
-        if FileManager.default.fileExists(atPath: appSupportURL.path) {
-            return appSupportURL
+        let preferredModels = ["ggml-base.en", "ggml-tiny.en"]
+
+        for model in preferredModels {
+            // 1. Check the app bundle.
+            if let bundled = Bundle.main.url(forResource: model, withExtension: "bin") {
+                return bundled
+            }
+            // 2. Check Application Support.
+            let appSupportURL = modelsDirectory.appendingPathComponent("\(model).bin")
+            if FileManager.default.fileExists(atPath: appSupportURL.path) {
+                return appSupportURL
+            }
         }
         return nil
     }
