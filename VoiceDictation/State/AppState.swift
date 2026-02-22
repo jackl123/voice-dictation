@@ -8,6 +8,7 @@ enum RecordingState: Equatable {
     case recording
     case transcribing
     case formatting
+    case copiedToClipboard
     case error(String)
 
     var isRecording: Bool { self == .recording }
@@ -19,10 +20,11 @@ enum RecordingState: Equatable {
         case .idle:
             let hotkey = HotKeyConfiguration.load().displayString
             return "Hold or tap \(hotkey) to dictate"
-        case .recording:      return "Recording..."
-        case .transcribing:   return "Transcribing..."
-        case .formatting:     return "Formatting..."
-        case .error(let msg): return "Error: \(msg)"
+        case .recording:          return "Recording..."
+        case .transcribing:       return "Transcribing..."
+        case .formatting:         return "Formatting..."
+        case .copiedToClipboard:  return "Copied to clipboard"
+        case .error(let msg):     return "Error: \(msg)"
         }
     }
 }
@@ -34,6 +36,7 @@ enum RecordingState: Equatable {
 final class AppState: ObservableObject {
     @Published var recordingState: RecordingState = .idle
     @Published var lastTranscript: String = ""
+    @Published var lastCostCents: Double? = nil
     @Published var permissionsGranted: Bool = false
     @Published var modelLoaded: Bool = false
 
@@ -104,6 +107,7 @@ final class AppState: ObservableObject {
         Task {
             do {
                 let text: String
+                var costCents: Double = 0
 
                 if isAPITranscriptionEnabled {
                     // Use OpenAI Whisper API for fast cloud transcription.
@@ -111,6 +115,10 @@ final class AppState: ObservableObject {
                     let language = UserDefaults.standard.string(forKey: "language") ?? "en"
                     let vocabPrompt = VocabularyManager.shared.whisperPrompt
                     text = try await apiTranscriber.transcribe(samples, language: language, apiKey: apiKey, prompt: vocabPrompt.isEmpty ? nil : vocabPrompt)
+
+                    // Whisper API costs $0.006 per minute of audio.
+                    let audioMinutes = Double(samples.count) / 16000.0 / 60.0
+                    costCents += audioMinutes * 0.6  // $0.006/min = 0.6 cents/min
                 } else {
                     // Use local whisper.cpp.
                     text = try await transcriber.transcribe(samples)
@@ -119,21 +127,30 @@ final class AppState: ObservableObject {
                 // Format the raw transcript, using a per-app tone override if configured.
                 recordingState = .formatting
                 let appTone = AppToneManager.shared.toneForFrontmostApp()
-                let formatted = await formatter.format(text, overrideTone: appTone)
+                let result = await formatter.formatWithCost(text, overrideTone: appTone)
+                costCents += result.costCents
 
-                let trimmed = formatted.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmed = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty {
                     lastTranscript = trimmed
+                    lastCostCents = costCents > 0 ? costCents : nil
                     TranscriptHistoryStore.shared.addEntry(trimmed)
 
                     let autoPaste = UserDefaults.standard.object(forKey: "autoPasteEnabled") as? Bool ?? true
                     if autoPaste {
                         injector.inject(trimmed)
+                        recordingState = .idle
                     } else {
                         injector.copyToClipboard(trimmed)
+                        recordingState = .copiedToClipboard
+                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                        if recordingState == .copiedToClipboard {
+                            recordingState = .idle
+                        }
                     }
+                } else {
+                    recordingState = .idle
                 }
-                recordingState = .idle
             } catch {
                 soundFeedback.playErrorSound()
                 recordingState = .error(error.localizedDescription)

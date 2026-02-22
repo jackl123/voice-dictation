@@ -184,6 +184,8 @@ final class MenuBarController: NSObject {
             symbolName = "waveform"
         case .formatting:
             symbolName = "text.badge.checkmark"
+        case .copiedToClipboard:
+            symbolName = "doc.on.clipboard"
         case .error:
             symbolName = "mic.slash"
         }

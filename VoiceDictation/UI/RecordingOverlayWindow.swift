@@ -22,7 +22,7 @@ final class RecordingOverlayWindow {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
                 switch state {
-                case .recording, .transcribing, .formatting:
+                case .recording, .transcribing, .formatting, .copiedToClipboard:
                     self?.showOverlay(for: state)
                 case .idle, .error:
                     self?.hideOverlay()
@@ -126,6 +126,10 @@ private struct OverlayContentView: View {
             ProgressView()
                 .controlSize(.small)
                 .tint(.white)
+        case .copiedToClipboard:
+            Image(systemName: "checkmark")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundStyle(.white)
         default:
             EmptyView()
         }
@@ -133,10 +137,11 @@ private struct OverlayContentView: View {
 
     private var backgroundColor: Color {
         switch state {
-        case .recording:    return .red
-        case .transcribing: return .blue
-        case .formatting:   return .purple
-        default:            return .secondary
+        case .recording:         return .red
+        case .transcribing:      return .blue
+        case .formatting:        return .purple
+        case .copiedToClipboard: return .green
+        default:                 return .secondary
         }
     }
 }

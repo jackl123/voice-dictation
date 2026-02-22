@@ -4,6 +4,7 @@ import SwiftUI
 struct StatusIndicatorView: View {
     @EnvironmentObject var appState: AppState
     @ObservedObject private var permissions = PermissionChecker.shared
+    @State private var showCopied = false
 
     /// Callback to open the settings window, provided by MenuBarController.
     var onOpenSettings: (() -> Void)?
@@ -41,9 +42,35 @@ struct StatusIndicatorView: View {
 
             // Last transcript
             VStack(alignment: .leading, spacing: 6) {
-                Text("Last transcript")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Text("Last transcript")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    if !appState.lastTranscript.isEmpty {
+                        Button {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(appState.lastTranscript, forType: .string)
+                            showCopied = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                showCopied = false
+                            }
+                        } label: {
+                            Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
+                                .font(.caption)
+                                .foregroundStyle(showCopied ? .green : .secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if let cost = appState.lastCostCents {
+                        Text(costLabel(cost))
+                            .font(.caption2)
+                            .foregroundStyle(.green)
+                    }
+                }
 
                 ScrollView {
                     Text(appState.lastTranscript.isEmpty ? "Nothing yet." : appState.lastTranscript)
@@ -148,21 +175,33 @@ struct StatusIndicatorView: View {
 
     private var stateColor: Color {
         switch appState.recordingState {
-        case .idle:         return .secondary
-        case .recording:    return .red
-        case .transcribing: return .blue
-        case .formatting:   return .purple
-        case .error:        return .orange
+        case .idle:              return .secondary
+        case .recording:         return .red
+        case .transcribing:      return .blue
+        case .formatting:        return .purple
+        case .copiedToClipboard: return .green
+        case .error:             return .orange
+        }
+    }
+
+    /// Formats an API cost in cents into a friendly label like "Cost: <$0.01" or "Cost: $0.02".
+    private func costLabel(_ cents: Double) -> String {
+        let dollars = cents / 100.0
+        if dollars < 0.01 {
+            return "Cost: <$0.01"
+        } else {
+            return String(format: "Cost: $%.2f", dollars)
         }
     }
 
     private var stateSymbol: String {
         switch appState.recordingState {
-        case .idle:         return "mic"
-        case .recording:    return "mic.fill"
-        case .transcribing: return "waveform"
-        case .formatting:   return "text.badge.checkmark"
-        case .error:        return "exclamationmark.triangle"
+        case .idle:              return "mic"
+        case .recording:         return "mic.fill"
+        case .transcribing:      return "waveform"
+        case .formatting:        return "text.badge.checkmark"
+        case .copiedToClipboard: return "doc.on.clipboard"
+        case .error:             return "exclamationmark.triangle"
         }
     }
 }

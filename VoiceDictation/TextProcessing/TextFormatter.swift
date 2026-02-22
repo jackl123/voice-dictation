@@ -36,20 +36,35 @@ final class TextFormatter {
         return Tone(rawValue: raw) ?? .formal
     }
 
+    /// Result of formatting that includes the estimated API cost.
+    struct FormatResult {
+        let text: String
+        let costCents: Double  // Estimated cost in US cents
+    }
+
     /// Format the raw transcript based on the user's formatting preference.
     /// - "ai": Uses OpenAI GPT-4o-mini, falls back to rule-based on failure.
     /// - "rules": Converts spoken commands to formatting.
     /// - "off": Returns text as-is.
     func format(_ text: String, overrideTone: Tone? = nil) async -> String {
+        let result = await formatWithCost(text, overrideTone: overrideTone)
+        return result.text
+    }
+
+    /// Format the raw transcript and return the estimated API cost.
+    func formatWithCost(_ text: String, overrideTone: Tone? = nil) async -> FormatResult {
         let mode = UserDefaults.standard.string(forKey: "formattingMode") ?? "rules"
         let apiKey = UserDefaults.standard.string(forKey: "openaiApiKey") ?? ""
         let tone = overrideTone ?? currentTone
 
         let formatted: String
+        var costCents: Double = 0
+
         switch mode {
         case "ai":
-            if !apiKey.isEmpty, let aiFormatted = await formatWithOpenAI(text, apiKey: apiKey, tone: tone) {
-                formatted = aiFormatted
+            if !apiKey.isEmpty, let aiResult = await formatWithOpenAI(text, apiKey: apiKey, tone: tone) {
+                formatted = aiResult.text
+                costCents = aiResult.costCents
             } else {
                 // Fall back to rule-based if API fails.
                 formatted = applyRuleBasedFormatting(text, tone: tone)
@@ -62,7 +77,8 @@ final class TextFormatter {
         }
 
         // Apply custom vocabulary replacements as a final post-processing step.
-        return VocabularyManager.shared.applyReplacements(formatted)
+        let final = VocabularyManager.shared.applyReplacements(formatted)
+        return FormatResult(text: final, costCents: costCents)
     }
 
     // MARK: - Rule-based formatting
@@ -179,9 +195,15 @@ final class TextFormatter {
 
     // MARK: - OpenAI API formatting
 
+    /// Result from the OpenAI formatting call, including cost.
+    private struct OpenAIFormatResult {
+        let text: String
+        let costCents: Double
+    }
+
     /// Sends raw transcript to GPT-4o-mini for intelligent formatting.
     /// Returns nil on failure so the caller can fall back to rule-based.
-    private func formatWithOpenAI(_ text: String, apiKey: String, tone: Tone = .formal) async -> String? {
+    private func formatWithOpenAI(_ text: String, apiKey: String, tone: Tone = .formal) async -> OpenAIFormatResult? {
         guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
             return nil
         }
@@ -264,7 +286,19 @@ final class TextFormatter {
                 return nil
             }
 
-            return content.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Calculate cost from token usage.
+            // GPT-4o-mini: $0.15 per 1M input tokens, $0.60 per 1M output tokens.
+            var costCents: Double = 0
+            if let usage = json["usage"] as? [String: Any] {
+                let inputTokens = usage["prompt_tokens"] as? Int ?? 0
+                let outputTokens = usage["completion_tokens"] as? Int ?? 0
+                costCents = (Double(inputTokens) * 0.015 + Double(outputTokens) * 0.06) / 1000.0
+            }
+
+            return OpenAIFormatResult(
+                text: content.trimmingCharacters(in: .whitespacesAndNewlines),
+                costCents: costCents
+            )
         } catch {
             print("[TextFormatter] OpenAI request failed: \(error.localizedDescription)")
             return nil
