@@ -7,6 +7,8 @@ struct StatusIndicatorView: View {
 
     /// Callback to open the settings window, provided by MenuBarController.
     var onOpenSettings: (() -> Void)?
+    /// Callback to open the transcript history window.
+    var onOpenHistory: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 16) {
@@ -59,6 +61,19 @@ struct StatusIndicatorView: View {
             HStack {
                 Button("Settings") {
                     onOpenSettings?()
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Button {
+                    onOpenHistory?()
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "clock.arrow.circlepath")
+                        Text("History")
+                    }
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)

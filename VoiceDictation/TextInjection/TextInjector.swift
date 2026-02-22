@@ -10,6 +10,16 @@ final class TextInjector {
 
     // MARK: - Public
 
+    /// Copies text to the clipboard without pasting. The clipboard is NOT restored.
+    func copyToClipboard(_ text: String) {
+        guard !text.isEmpty else { return }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+    }
+
+    /// Injects text into the frontmost app via clipboard + simulated Cmd+V.
+    /// The original clipboard is saved and restored after a short delay.
     func inject(_ text: String) {
         guard !text.isEmpty else { return }
 

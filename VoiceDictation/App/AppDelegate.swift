@@ -18,6 +18,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Set up the menu bar presence.
         menuBarController = MenuBarController(appState: appState)
 
+        // Show onboarding on first launch.
+        if !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") {
+            menuBarController?.showOnboarding()
+        }
+
         // Check permissions (deferred to avoid blocking launch).
         PermissionChecker.shared.checkAll(appState: appState)
 

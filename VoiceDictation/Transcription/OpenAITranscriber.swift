@@ -14,7 +14,7 @@ final class OpenAITranscriber {
 
     /// Transcribe PCM samples using the OpenAI Whisper API.
     /// Returns the transcribed text, or throws on failure.
-    func transcribe(_ samples: [Float], language: String = "en", apiKey: String) async throws -> String {
+    func transcribe(_ samples: [Float], language: String = "en", apiKey: String, prompt: String? = nil) async throws -> String {
         guard !samples.isEmpty else { return "" }
         guard !apiKey.isEmpty else { throw OpenAIError.noAPIKey }
 
@@ -46,6 +46,13 @@ final class OpenAITranscriber {
         body.appendString("--\(boundary)\r\n")
         body.appendString("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n")
         body.appendString("text\r\n")
+
+        // Vocabulary prompt (biases Whisper toward specific spellings).
+        if let prompt, !prompt.isEmpty {
+            body.appendString("--\(boundary)\r\n")
+            body.appendString("Content-Disposition: form-data; name=\"prompt\"\r\n\r\n")
+            body.appendString("\(prompt)\r\n")
+        }
 
         // End boundary.
         body.appendString("--\(boundary)--\r\n")

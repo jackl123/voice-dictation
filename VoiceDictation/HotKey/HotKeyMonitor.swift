@@ -117,6 +117,16 @@ final class HotKeyMonitor {
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
         let flags = event.flags
 
+        // ── Spacebar lock: pressing space while holding hotkey switches to toggle mode ──
+        if type == .keyDown && isKeyDown && !isToggleMode {
+            let spaceKeyCode = Int64(kVK_Space)
+            if keyCode == spaceKeyCode && hotkeyConfig.keyCode != Int(kVK_Space) {
+                isToggleMode = true
+                print("[HotKeyMonitor] Spacebar lock — switched to toggle mode")
+                return nil  // suppress the spacebar
+            }
+        }
+
         // ── Modifier-only hotkeys (fn, Right ⌘, etc.) ──
         if hotkeyConfig.isModifierOnly {
             return handleModifierOnlyEvent(type: type, keyCode: keyCode, flags: flags, event: event)
@@ -235,6 +245,13 @@ final class HotKeyMonitor {
         // For modifier-only hotkeys, if any regular key is pressed while the
         // modifier is held, mark it so we know the modifier was used normally.
         if type == .keyDown && isKeyDown {
+            let spaceKeyCode = Int64(kVK_Space)
+            if keyCode == spaceKeyCode && !isToggleMode {
+                // Spacebar lock: switch to toggle mode instead of marking as normal modifier use.
+                isToggleMode = true
+                print("[HotKeyMonitor] Spacebar lock — switched to toggle mode")
+                return nil  // suppress the spacebar
+            }
             otherKeyPressedDuringModifier = true
         }
 

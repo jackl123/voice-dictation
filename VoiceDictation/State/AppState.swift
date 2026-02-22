@@ -109,20 +109,29 @@ final class AppState: ObservableObject {
                     // Use OpenAI Whisper API for fast cloud transcription.
                     let apiKey = UserDefaults.standard.string(forKey: "openaiApiKey") ?? ""
                     let language = UserDefaults.standard.string(forKey: "language") ?? "en"
-                    text = try await apiTranscriber.transcribe(samples, language: language, apiKey: apiKey)
+                    let vocabPrompt = VocabularyManager.shared.whisperPrompt
+                    text = try await apiTranscriber.transcribe(samples, language: language, apiKey: apiKey, prompt: vocabPrompt.isEmpty ? nil : vocabPrompt)
                 } else {
                     // Use local whisper.cpp.
                     text = try await transcriber.transcribe(samples)
                 }
 
-                // Format the raw transcript.
+                // Format the raw transcript, using a per-app tone override if configured.
                 recordingState = .formatting
-                let formatted = await formatter.format(text)
+                let appTone = AppToneManager.shared.toneForFrontmostApp()
+                let formatted = await formatter.format(text, overrideTone: appTone)
 
                 let trimmed = formatted.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty {
                     lastTranscript = trimmed
-                    injector.inject(trimmed)
+                    TranscriptHistoryStore.shared.addEntry(trimmed)
+
+                    let autoPaste = UserDefaults.standard.object(forKey: "autoPasteEnabled") as? Bool ?? true
+                    if autoPaste {
+                        injector.inject(trimmed)
+                    } else {
+                        injector.copyToClipboard(trimmed)
+                    }
                 }
                 recordingState = .idle
             } catch {

@@ -40,24 +40,29 @@ final class TextFormatter {
     /// - "ai": Uses OpenAI GPT-4o-mini, falls back to rule-based on failure.
     /// - "rules": Converts spoken commands to formatting.
     /// - "off": Returns text as-is.
-    func format(_ text: String) async -> String {
+    func format(_ text: String, overrideTone: Tone? = nil) async -> String {
         let mode = UserDefaults.standard.string(forKey: "formattingMode") ?? "rules"
         let apiKey = UserDefaults.standard.string(forKey: "openaiApiKey") ?? ""
-        let tone = currentTone
+        let tone = overrideTone ?? currentTone
 
+        let formatted: String
         switch mode {
         case "ai":
             if !apiKey.isEmpty, let aiFormatted = await formatWithOpenAI(text, apiKey: apiKey, tone: tone) {
-                return aiFormatted
+                formatted = aiFormatted
+            } else {
+                // Fall back to rule-based if API fails.
+                formatted = applyRuleBasedFormatting(text, tone: tone)
             }
-            // Fall back to rule-based if API fails.
-            return applyRuleBasedFormatting(text, tone: tone)
         case "rules":
-            return applyRuleBasedFormatting(text, tone: tone)
+            formatted = applyRuleBasedFormatting(text, tone: tone)
         default:
             // "off" — return as-is.
-            return text
+            formatted = text
         }
+
+        // Apply custom vocabulary replacements as a final post-processing step.
+        return VocabularyManager.shared.applyReplacements(formatted)
     }
 
     // MARK: - Rule-based formatting
@@ -206,6 +211,8 @@ final class TextFormatter {
             """
         }
 
+        let vocabSection = VocabularyManager.shared.aiPromptSection
+
         let systemPrompt = """
         You are a text formatter for voice dictation. The user has spoken text into a \
         microphone and it has been transcribed. Your job is to format it properly:
@@ -214,7 +221,7 @@ final class TextFormatter {
         - Preserve the speaker's exact words and meaning
         - Return ONLY the formatted text, no explanations or preamble
 
-        \(toneInstruction)
+        \(toneInstruction)\(vocabSection)
         """
 
         let requestBody: [String: Any] = [

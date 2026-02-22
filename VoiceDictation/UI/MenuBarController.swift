@@ -10,6 +10,8 @@ final class MenuBarController: NSObject {
     private var cancellables = Set<AnyCancellable>()
     private var overlayWindow: RecordingOverlayWindow?
     private var settingsWindow: NSWindow?
+    private var historyWindow: NSWindow?
+    private var onboardingWindow: NSWindow?
 
     init(appState: AppState) {
         self.appState = appState
@@ -43,9 +45,10 @@ final class MenuBarController: NSObject {
         popover.behavior = .transient
         popover.animates = true
         popover.contentViewController = NSHostingController(
-            rootView: StatusIndicatorView(onOpenSettings: { [weak self] in
-                self?.openSettings()
-            })
+            rootView: StatusIndicatorView(
+                onOpenSettings: { [weak self] in self?.openSettings() },
+                onOpenHistory: { [weak self] in self?.openHistory() }
+            )
             .environmentObject(appState)
         )
         self.popover = popover
@@ -94,13 +97,73 @@ final class MenuBarController: NSObject {
 
         let window = NSWindow(contentViewController: hostingController)
         window.title = "VoiceDictation Settings"
-        window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 440, height: 520))
+        window.styleMask = [.titled, .closable, .resizable]
+        window.setContentSize(NSSize(width: 440, height: 700))
+        window.minSize = NSSize(width: 440, height: 400)
         window.center()
         window.makeKeyAndOrderFront(nil)
 
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow = window
+    }
+
+    // MARK: - History window
+
+    func openHistory() {
+        popover?.performClose(nil)
+
+        if let existing = historyWindow, existing.isVisible {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let historyView = TranscriptHistoryView()
+        let hostingController = NSHostingController(rootView: historyView)
+
+        let window = NSWindow(contentViewController: hostingController)
+        window.title = "Transcript History"
+        window.styleMask = [.titled, .closable, .resizable]
+        window.setContentSize(NSSize(width: 400, height: 500))
+        window.minSize = NSSize(width: 320, height: 300)
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+
+        NSApp.activate(ignoringOtherApps: true)
+        historyWindow = window
+    }
+
+    // MARK: - Onboarding window
+
+    func showOnboarding() {
+        if let existing = onboardingWindow, existing.isVisible {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let onboardingView = OnboardingView(onComplete: { [weak self] in
+            self?.completeOnboarding()
+        })
+
+        let hostingController = NSHostingController(rootView: onboardingView)
+
+        let window = NSWindow(contentViewController: hostingController)
+        window.title = "Welcome to VoiceDictation"
+        window.styleMask = [.titled, .closable]
+        window.setContentSize(NSSize(width: 480, height: 400))
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        window.isReleasedWhenClosed = false
+
+        NSApp.activate(ignoringOtherApps: true)
+        onboardingWindow = window
+    }
+
+    private func completeOnboarding() {
+        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+        onboardingWindow?.close()
+        onboardingWindow = nil
     }
 
     // MARK: - Icon updates
