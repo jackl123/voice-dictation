@@ -34,7 +34,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.hotKeyMonitor?.start()
         }
 
-        // Load the Whisper model on a background thread (only if using local transcription).
+        // Load the Whisper model (or mark ready for API mode).
+        loadModelIfNeeded()
+
+        // Watch for transcription mode changes so the model is loaded
+        // when the user switches from API → local in Settings.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(transcriptionModeChanged),
+            name: UserDefaults.didChangeNotification,
+            object: nil
+        )
+    }
+
+    @objc private func transcriptionModeChanged() {
+        let mode = UserDefaults.standard.string(forKey: "transcriptionMode") ?? "local"
+        if mode == "local", !appState.modelLoaded {
+            loadModelIfNeeded()
+        }
+    }
+
+    private func loadModelIfNeeded() {
         let state = self.appState
         let transcriptionMode = UserDefaults.standard.string(forKey: "transcriptionMode") ?? "local"
 

@@ -20,7 +20,7 @@ struct OnboardingView: View {
     @ObservedObject private var permissions = PermissionChecker.shared
 
     private var allPermissionsGranted: Bool {
-        permissions.microphoneGranted && permissions.accessibilityGranted
+        permissions.microphoneGranted && permissions.accessibilityGranted && permissions.inputMonitoringGranted
     }
 
     var body: some View {
@@ -195,10 +195,18 @@ private struct PermissionsStepView: View {
 
                 permissionRow(
                     icon: "keyboard",
-                    name: "Accessibility & Input Monitoring",
-                    description: "To detect your hotkey and type text into apps",
+                    name: "Accessibility",
+                    description: "To type text into apps",
                     granted: permissions.accessibilityGranted,
                     action: { PermissionChecker.shared.openAccessibilitySettings() }
+                )
+
+                permissionRow(
+                    icon: "hand.raised.fill",
+                    name: "Input Monitoring",
+                    description: "To detect your hotkey",
+                    granted: permissions.inputMonitoringGranted,
+                    action: { PermissionChecker.shared.openInputMonitoringSettings() }
                 )
             }
             .padding(.horizontal, 32)

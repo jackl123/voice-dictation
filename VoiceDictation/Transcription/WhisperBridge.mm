@@ -50,6 +50,17 @@
     // Disable translations — we want the original spoken language.
     params.translate = false;
 
+    // Anti-hallucination settings.
+    params.no_context    = true;   // Don't use previous transcription as decoder context.
+    params.single_segment = true;  // Short dictation clips are typically one segment.
+    params.suppress_blank = true;  // Suppress blank/silent outputs.
+    params.suppress_nst   = true;  // Suppress non-speech tokens (music, laughter, etc.).
+
+    // Entropy-based hallucination detection.
+    // Segments with high entropy (model is uncertain) are likely hallucinated.
+    params.entropy_thold  = 2.4f;  // Flag segments above this entropy as failed.
+    params.logprob_thold  = -1.0f; // Flag segments with very low avg log probability.
+
     // Print progress to stderr during development (disable for release).
     params.print_progress = false;
     params.print_timestamps = false;

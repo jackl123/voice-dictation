@@ -48,6 +48,41 @@ final class AppState: ObservableObject {
     let formatter = TextFormatter.shared
     let soundFeedback = SoundFeedback.shared
 
+    /// Minimum audio duration in seconds required for transcription.
+    /// Anything shorter is almost certainly a mis-tap, not speech.
+    private let minimumAudioDuration: Double = 0.3
+
+    /// Patterns commonly hallucinated by small Whisper models on silence/noise.
+    private let hallucinationPatterns: [String] = [
+        "thank you",
+        "thanks for watching",
+        "subscribe",
+        "like and subscribe",
+        "see you next time",
+        "bye",
+        "the end",
+        "you",
+        "i'm going to",
+        "so",
+    ]
+
+    /// Returns true if the transcript looks like a Whisper hallucination.
+    private func isLikelyHallucination(_ text: String) -> Bool {
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .replacingOccurrences(of: "[.!?,]", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+
+        if cleaned.isEmpty { return true }
+
+        // Exact match against common hallucination phrases.
+        for pattern in hallucinationPatterns {
+            if cleaned == pattern { return true }
+        }
+
+        return false
+    }
+
     // Callback hook for AppDelegate to wire additional side-effects.
     var onStartRecording: (() -> Void)?
 
@@ -99,7 +134,9 @@ final class AppState: ObservableObject {
 
         let samples = recorder.stopCapture()
 
-        guard !samples.isEmpty else {
+        // Reject empty or too-short recordings (likely a mis-tap).
+        let audioDuration = Double(samples.count) / 16000.0
+        guard !samples.isEmpty, audioDuration >= minimumAudioDuration else {
             recordingState = .idle
             return
         }
@@ -121,7 +158,15 @@ final class AppState: ObservableObject {
                     costCents += audioMinutes * 0.6  // $0.006/min = 0.6 cents/min
                 } else {
                     // Use local whisper.cpp.
-                    text = try await transcriber.transcribe(samples)
+                    let rawText = try await transcriber.transcribe(samples)
+
+                    // Guard against Whisper hallucinations on short/noisy audio.
+                    if isLikelyHallucination(rawText) {
+                        print("[AppState] Discarded likely hallucination: \"\(rawText)\"")
+                        recordingState = .idle
+                        return
+                    }
+                    text = rawText
                 }
 
                 // Format the raw transcript, using a per-app tone override if configured.

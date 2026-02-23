@@ -56,9 +56,25 @@ final class PermissionChecker: ObservableObject {
     private func refreshStatus() {
         microphoneGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
         accessibilityGranted = AXIsProcessTrusted()
-        // Input Monitoring: best proxy is whether Accessibility is trusted.
-        // The definitive check happens when CGEventTapCreate succeeds in HotKeyMonitor.
-        inputMonitoringGranted = accessibilityGranted
+        inputMonitoringGranted = checkInputMonitoring()
+    }
+
+    /// Probe Input Monitoring by creating a listen-only event tap.
+    /// Returns true if the system allows it (permission granted).
+    private func checkInputMonitoring() -> Bool {
+        let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .listenOnly,
+            eventsOfInterest: CGEventMask(1 << CGEventType.keyDown.rawValue),
+            callback: { _, _, event, _ in Unmanaged.passUnretained(event) },
+            userInfo: nil
+        )
+        if let tap = tap {
+            CFMachPortInvalidate(tap)
+            return true
+        }
+        return false
     }
 
     private func startPolling() {
