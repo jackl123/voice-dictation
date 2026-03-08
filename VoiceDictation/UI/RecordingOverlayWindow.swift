@@ -50,8 +50,9 @@ final class RecordingOverlayWindow {
         let width: CGFloat
         switch state {
         case .recording:        width = 190   // extra room for discard button
-        case .noSpeechDetected: width = 180   // longer text + icon
-        default:                width = 160
+        case .noSpeechDetected: width = 220   // "We couldn't hear you" + icon
+        case .copiedToClipboard: width = 175  // "Done — pasted"
+        default:                width = 165
         }
         panel?.contentViewController?.view.frame.size = NSSize(width: width, height: 40)
 
@@ -140,35 +141,34 @@ private struct OverlayContentView: View {
         switch state {
         case .recording:
             Circle()
-                .fill(.white)
-                .frame(width: 8, height: 8)
+                .fill(.red)
+                .frame(width: 10, height: 10)
                 .modifier(PulseModifier())
-        case .transcribing, .formatting:
-            ProgressView()
-                .controlSize(.small)
-                .tint(.white)
+        case .transcribing:
+            Circle()
+                .fill(Color(red: 0.33, green: 0.67, blue: 1.0))
+                .frame(width: 10, height: 10)
+                .modifier(PulseModifier())
+        case .formatting:
+            Circle()
+                .fill(.yellow)
+                .frame(width: 10, height: 10)
+                .modifier(PulseModifier())
         case .copiedToClipboard:
             Image(systemName: "checkmark")
-                .font(.system(size: 8, weight: .bold))
-                .foregroundStyle(.white)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.green)
         case .noSpeechDetected:
-            Image(systemName: "mic.slash")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.white)
+            Image(systemName: "exclamationmark.circle")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.red)
         default:
             EmptyView()
         }
     }
 
     private var backgroundColor: Color {
-        switch state {
-        case .recording:         return .red
-        case .transcribing:      return .blue
-        case .formatting:        return .purple
-        case .copiedToClipboard: return .green
-        case .noSpeechDetected:  return .secondary
-        default:                 return .secondary
-        }
+        Color(white: 0.15)
     }
 }
 

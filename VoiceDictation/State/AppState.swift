@@ -21,11 +21,11 @@ enum RecordingState: Equatable {
         case .idle:
             let hotkey = HotKeyConfiguration.load().displayString
             return "Hold or tap \(hotkey) to dictate"
-        case .recording:          return "Recording..."
+        case .recording:          return "Listening..."
         case .transcribing:       return "Transcribing..."
         case .formatting:         return "Formatting..."
-        case .copiedToClipboard:  return "Copied to clipboard"
-        case .noSpeechDetected:   return "No speech detected"
+        case .copiedToClipboard:  return "Done — pasted"
+        case .noSpeechDetected:   return "We couldn't hear you"
         case .error(let msg):     return "Error: \(msg)"
         }
     }
