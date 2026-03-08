@@ -9,6 +9,7 @@ enum RecordingState: Equatable {
     case transcribing
     case formatting
     case copiedToClipboard
+    case noSpeechDetected
     case error(String)
 
     var isRecording: Bool { self == .recording }
@@ -24,6 +25,7 @@ enum RecordingState: Equatable {
         case .transcribing:       return "Transcribing..."
         case .formatting:         return "Formatting..."
         case .copiedToClipboard:  return "Copied to clipboard"
+        case .noSpeechDetected:   return "No speech detected"
         case .error(let msg):     return "Error: \(msg)"
         }
     }
@@ -64,6 +66,16 @@ final class AppState: ObservableObject {
         "you",
         "i'm going to",
         "so",
+        "transcribed by https://otter.ai",
+        "transcription by",
+        "subtitles by",
+    ]
+
+    /// Substrings that indicate a hallucination regardless of surrounding text.
+    private let hallucinationSubstrings: [String] = [
+        "otter.ai",
+        "transcribed by",
+        "subtitles by",
     ]
 
     /// Returns true if the transcript looks like a Whisper hallucination.
@@ -78,6 +90,11 @@ final class AppState: ObservableObject {
         // Exact match against common hallucination phrases.
         for pattern in hallucinationPatterns {
             if cleaned == pattern { return true }
+        }
+
+        // Substring match for URL-based hallucinations.
+        for substring in hallucinationSubstrings {
+            if cleaned.contains(substring) { return true }
         }
 
         return false
@@ -122,6 +139,7 @@ final class AppState: ObservableObject {
     func cancelRecording() {
         guard recordingState == .recording else { return }
         _ = recorder.stopCapture()  // discard samples
+        soundFeedback.playStopSound()
         recordingState = .idle
         print("[AppState] Recording cancelled")
     }
@@ -163,7 +181,11 @@ final class AppState: ObservableObject {
                     // Guard against Whisper hallucinations on short/noisy audio.
                     if isLikelyHallucination(rawText) {
                         print("[AppState] Discarded likely hallucination: \"\(rawText)\"")
-                        recordingState = .idle
+                        recordingState = .noSpeechDetected
+                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                        if recordingState == .noSpeechDetected {
+                            recordingState = .idle
+                        }
                         return
                     }
                     text = rawText
@@ -194,7 +216,11 @@ final class AppState: ObservableObject {
                         }
                     }
                 } else {
-                    recordingState = .idle
+                    recordingState = .noSpeechDetected
+                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                    if recordingState == .noSpeechDetected {
+                        recordingState = .idle
+                    }
                 }
             } catch {
                 soundFeedback.playErrorSound()

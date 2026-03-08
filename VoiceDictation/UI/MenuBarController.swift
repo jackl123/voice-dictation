@@ -186,6 +186,8 @@ final class MenuBarController: NSObject {
             symbolName = "text.badge.checkmark"
         case .copiedToClipboard:
             symbolName = "doc.on.clipboard"
+        case .noSpeechDetected:
+            symbolName = "mic.slash"
         case .error:
             symbolName = "mic.slash"
         }

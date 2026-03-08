@@ -180,6 +180,7 @@ struct StatusIndicatorView: View {
         case .transcribing:      return .blue
         case .formatting:        return .purple
         case .copiedToClipboard: return .green
+        case .noSpeechDetected:  return .secondary
         case .error:             return .orange
         }
     }
@@ -201,6 +202,7 @@ struct StatusIndicatorView: View {
         case .transcribing:      return "waveform"
         case .formatting:        return "text.badge.checkmark"
         case .copiedToClipboard: return "doc.on.clipboard"
+        case .noSpeechDetected:  return "mic.slash"
         case .error:             return "exclamationmark.triangle"
         }
     }

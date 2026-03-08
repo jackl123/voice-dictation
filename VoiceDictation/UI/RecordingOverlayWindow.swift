@@ -22,7 +22,7 @@ final class RecordingOverlayWindow {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
                 switch state {
-                case .recording, .transcribing, .formatting, .copiedToClipboard:
+                case .recording, .transcribing, .formatting, .copiedToClipboard, .noSpeechDetected:
                     self?.showOverlay(for: state)
                 case .idle, .error:
                     self?.hideOverlay()
@@ -38,15 +38,24 @@ final class RecordingOverlayWindow {
             createPanel()
         }
 
+        let onCancel: (() -> Void)? = state == .recording ? { [weak self] in
+            self?.appState.cancelRecording()
+        } : nil
+
         // Update the content for the current state.
         panel?.contentViewController = NSHostingController(
-            rootView: OverlayContentView(state: state)
+            rootView: OverlayContentView(state: state, onCancel: onCancel)
         )
 
-        // Size to fit content.
-        panel?.contentViewController?.view.frame.size = NSSize(width: 160, height: 40)
+        let width: CGFloat
+        switch state {
+        case .recording:        width = 190   // extra room for discard button
+        case .noSpeechDetected: width = 180   // longer text + icon
+        default:                width = 160
+        }
+        panel?.contentViewController?.view.frame.size = NSSize(width: width, height: 40)
 
-        positionPanel()
+        positionPanel(width: width)
         panel?.orderFrontRegardless()
     }
 
@@ -80,19 +89,18 @@ final class RecordingOverlayWindow {
     }
 
     /// Position the panel centered below the menu bar.
-    private func positionPanel() {
+    private func positionPanel(width: CGFloat = 160) {
         guard let panel, let screen = NSScreen.main else { return }
 
         let screenFrame = screen.frame
         let menuBarHeight: CGFloat = NSStatusBar.system.thickness
-        let panelWidth: CGFloat = 160
         let panelHeight: CGFloat = 40
 
         // Center horizontally, just below the menu bar.
-        let x = screenFrame.midX - panelWidth / 2
+        let x = screenFrame.midX - width / 2
         let y = screenFrame.maxY - menuBarHeight - panelHeight - 8
 
-        panel.setFrame(NSRect(x: x, y: y, width: panelWidth, height: panelHeight), display: true)
+        panel.setFrame(NSRect(x: x, y: y, width: width, height: panelHeight), display: true)
     }
 }
 
@@ -100,6 +108,7 @@ final class RecordingOverlayWindow {
 
 private struct OverlayContentView: View {
     let state: RecordingState
+    var onCancel: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 8) {
@@ -107,6 +116,18 @@ private struct OverlayContentView: View {
             Text(state.statusText)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.white)
+
+            if let onCancel {
+                Button(action: onCancel) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .frame(width: 18, height: 18)
+                        .background(.white.opacity(0.25))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
@@ -130,6 +151,10 @@ private struct OverlayContentView: View {
             Image(systemName: "checkmark")
                 .font(.system(size: 8, weight: .bold))
                 .foregroundStyle(.white)
+        case .noSpeechDetected:
+            Image(systemName: "mic.slash")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.white)
         default:
             EmptyView()
         }
@@ -141,6 +166,7 @@ private struct OverlayContentView: View {
         case .transcribing:      return .blue
         case .formatting:        return .purple
         case .copiedToClipboard: return .green
+        case .noSpeechDetected:  return .secondary
         default:                 return .secondary
         }
     }
